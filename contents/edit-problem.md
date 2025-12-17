@@ -1,0 +1,5 @@
+---
+title: ویرایش سوال
+---
+
+<ProblemEditor />

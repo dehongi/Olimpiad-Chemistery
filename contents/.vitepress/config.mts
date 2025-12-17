@@ -98,9 +98,7 @@ export default defineConfig({
                   // Create slug
                   const slug = (year + '-' + title.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-')).replace(/^-|-$/g, '');
                   const filename = `${slug}.md`;
-                  const { fileURLToPath } = await import('url');
-                  const dirname = path.dirname(fileURLToPath(import.meta.url));
-                  const filepath = path.resolve(dirname, '../problems', filename);
+                  const filepath = path.join(process.cwd(), 'contents', 'problems', filename);
 
                   const content = `---
 title: ${title}
@@ -124,6 +122,123 @@ ${solution}
                   res.end(JSON.stringify({ error: 'Failed to save file' }));
                 }
               });
+            } else {
+              next();
+            }
+          });
+
+          server.middlewares.use('/api/edit-problem', async (req, res, next) => {
+            if (req.method === 'POST') {
+              let body = '';
+              req.on('data', chunk => body += chunk);
+              req.on('end', async () => {
+                try {
+                  const { filename, title, year, problem, solution } = JSON.parse(body);
+                  const fs = await import('fs');
+                  const path = await import('path');
+                  const filepath = path.join(process.cwd(), 'contents', 'problems', filename);
+
+                  const content = `---
+title: ${title}
+year: ${year}
+---
+# ${title} (${year})
+
+${problem}
+
+::: details مشاهده پاسخ
+${solution}
+:::
+`;
+                  fs.writeFileSync(filepath, content);
+
+                  res.statusCode = 200;
+                  res.end(JSON.stringify({ success: true }));
+                } catch (e) {
+                  console.error(e);
+                  res.statusCode = 500;
+                  res.end(JSON.stringify({ error: 'Failed to update file' }));
+                }
+              });
+            } else {
+              next();
+            }
+          });
+
+          server.middlewares.use('/api/get-problem', async (req, res, next) => {
+            if (req.method === 'GET') {
+              try {
+                const url = new URL(req.url, `http://${req.headers.host}`);
+                const filename = url.searchParams.get('filename');
+                
+                console.log('GET /api/get-problem - filename:', filename);
+                
+                if (!filename) {
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({ error: 'Filename required' }));
+                  return;
+                }
+
+                const fs = await import('fs');
+                const path = await import('path');
+                
+                // Use process.cwd() which points to project root during dev
+                const filepath = path.join(process.cwd(), 'contents', 'problems', filename);
+
+                console.log('Resolved filepath:', filepath);
+                console.log('File exists:', fs.existsSync(filepath));
+
+                if (!fs.existsSync(filepath)) {
+                  console.error('File not found at:', filepath);
+                  res.statusCode = 404;
+                  res.end(JSON.stringify({ error: 'File not found', path: filepath }));
+                  return;
+                }
+
+                const content = fs.readFileSync(filepath, 'utf-8');
+                console.log('Reading file:', filepath);
+                
+                // Parse frontmatter and content
+                const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+                if (!frontmatterMatch) {
+                  console.error('Failed to match frontmatter');
+                  res.statusCode = 500;
+                  res.end(JSON.stringify({ error: 'Invalid file format' }));
+                  return;
+                }
+
+                const frontmatter = frontmatterMatch[1];
+                const body = frontmatterMatch[2];
+
+                const titleMatch = frontmatter.match(/title:\s*(.+)/);
+                const yearMatch = frontmatter.match(/year:\s*(.+)/);
+
+                // Extract problem and solution with improved regex
+                // Problem is between the title line and ::: details
+                const problemMatch = body.match(/^#[^\n]+\n\n([\s\S]*?)\n::: details/);
+                // Solution is between ::: details and closing :::
+                const solutionMatch = body.match(/::: details[^\n]*\n([\s\S]*?)\n:::\s*$/m);
+
+                console.log('Parsed data:', {
+                  hasTitle: !!titleMatch,
+                  hasYear: !!yearMatch,
+                  hasProblem: !!problemMatch,
+                  hasSolution: !!solutionMatch
+                });
+
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                  title: titleMatch ? titleMatch[1].trim() : '',
+                  year: yearMatch ? yearMatch[1].trim() : '',
+                  problem: problemMatch ? problemMatch[1].trim() : '',
+                  solution: solutionMatch ? solutionMatch[1].trim() : ''
+                }));
+              } catch (e) {
+                console.error(e);
+                res.statusCode = 500;
+                res.end(JSON.stringify({ error: 'Failed to read file' }));
+              }
             } else {
               next();
             }
