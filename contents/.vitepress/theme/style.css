@@ -1,0 +1,42 @@
+/* Import Vazirmatn Font */
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+
+:root {
+  /* Font Family */
+  --vp-font-family-base: 'Vazirmatn', sans-serif !important;
+  --vp-font-family-mono: monospace !important;
+
+  /* Brand Colors - Chemistry Blue/Teal */
+  --vp-c-brand-1: #0ea5e9;
+  --vp-c-brand-2: #0284c7;
+  --vp-c-brand-3: #0369a1;
+  
+  /* Background gradients */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #0ea5e9 30%, #4f46e5);
+  
+  /* RTL adjustments */
+  direction: rtl;
+  text-align: right;
+}
+
+/* Improve readability for Persian text */
+.vp-doc p, .vp-doc li {
+  line-height: 1.8;
+  font-size: 1.1rem;
+}
+
+.vp-doc h1 { 
+    font-weight: 900;
+    letter-spacing: -0.5px;
+}
+
+/* Custom Block enhancements */
+.custom-block.tip {
+  border-color: var(--vp-c-brand-1);
+}
+
+/* Sidebar adjustments */
+.VPSidebarItem.level-0 > .item > .text {
+  font-weight: 800;
+}
