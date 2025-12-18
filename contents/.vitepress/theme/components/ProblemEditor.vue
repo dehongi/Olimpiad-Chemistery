@@ -68,7 +68,9 @@ async function updateProblem() {
     if (res.ok) {
       status.value = '✅ سوال با موفقیت به‌روزرسانی شد!'
       setTimeout(() => {
-        window.location.href = '/problems/'
+        // Redirect to the problem detail page
+        const problemSlug = filename.value.replace(/\.md$/, '')
+        window.location.href = `/problems/${problemSlug}`
       }, 1500)
     } else {
       status.value = '❌ خطا: ذخیره نشد.'
